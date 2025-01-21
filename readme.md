@@ -1,5 +1,8 @@
 ## Repository for the QUB-Perception of Human Engagement in assembly Operation Dataset
 
+<!-- Embed the GIF -->
+![Dataset Overview](media/qub-pheo.gif)
+
 Thank you for your interest in our dataset.
 
 If you are looking for our QUB-PHEO dataset preprocessing pipeline, please refer to  
