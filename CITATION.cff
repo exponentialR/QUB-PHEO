@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this dataset in your work, please cite it using the following information:"
+title: "QUB – Perception of Human Engagement in Assembly Operation (PHEO) Dataset"
+authors:
+  - family-names: Adebayo
+    given-names: Samuel
+    orcid: https://orcid.org/0000-0002-8592-1196
+date-released: 2024-10-19
+version: "1.0.0"
+doi: 10.5281/zenodo.13956074
+repository-code: https://github.com/exponentialR/QUB-PHEO
+license: MIT
