@@ -9,7 +9,7 @@ class HandLandmarkDetector:
     """
     Wrapper around MediaPipe Hands for detection and drawing of hand landmarks.
     """
-    def __init__(self, detection_confidence=0.5, tracking_confidence=0.5, max_num_hands=2, model_complexity=1):
+    def __init__(self, detection_confidence=0.5, tracking_confidence=0.5, max_num_hands=4, model_complexity=1):
         self.mp_hands = mp.solutions.hands
         self.hands = self.mp_hands.Hands(
             static_image_mode=False,
