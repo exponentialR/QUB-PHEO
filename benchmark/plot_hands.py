@@ -1,3 +1,24 @@
+'''
+Script to detect and annotate hand landmarks in a video using MediaPipe, with optional CSV logging of detection metadata.
+
+This tool reads an input video file, processes each frame to detect hand landmarks, draws the detected landmarks,
+and outputs an annotated video. Optionally, a CSV file can be generated logging the timestamp and number of hands detected per frame.
+
+Usage:
+    python hand_landmark_detector.py \
+        --input /path/to/input.mp4 \
+        --output /path/to/output.mp4 \
+        [--csv /path/to/log.csv] \
+        [--detection_confidence 0.7] \
+        [--tracking_confidence 0.7] \
+        [--show] \
+        [--no_fps]
+
+Author: Samuel Adebayo
+'''
+__author__ = "Samuel Adebayo"
+
+
 import cv2
 import mediapipe as mp
 import time
