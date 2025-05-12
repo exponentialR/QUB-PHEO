@@ -17,6 +17,7 @@ def get_badSegment(folder_directory):
     print(f"Bad segments saved to bad_segments.txt")
 
 if __name__ == '__main__':
-    folder_directory = '/home/samuel/Downloads/Bad_Segments'
+    folder_directory = '/home/samueladebayo/Documents/PhD/QUBPHEO/corrupted-segment'
     get_badSegment(folder_directory)
+
 
