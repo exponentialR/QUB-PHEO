@@ -62,8 +62,8 @@ def copy_videos(src_dir: str, dst_dir: str, key_for_extract: str = 'CAM_AV') -> 
 
 
 if __name__ == '__main__':
-    FOLDER_PATH = '/home/samueladebayo/Documents/PhD/QUBPHEO/Annotated'
-    FOLDER_TO_COPYTO = '/media/samueladebayo/ARISE_B1/Datasets'
+    FOLDER_PATH = '/home/samuel/extended_storage/Datasets/QUB-PHEO/segmented'
+    FOLDER_TO_COPYTO = '/home/samuel/extended_storage/Datasets/QUB-PHEO/process_wait'
     KEY_FOR_EXTRACT = 'CAM_AV'
 
     total_copied = copy_videos(FOLDER_PATH, FOLDER_TO_COPYTO, KEY_FOR_EXTRACT)
