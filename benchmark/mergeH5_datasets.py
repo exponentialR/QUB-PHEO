@@ -1,3 +1,42 @@
+"""
+    Merge matching HDF5 files from one project directory into another,
+    log missing sources, record shape‐mismatches, and summarise per-file stats.
+
+    Author
+    ------
+    Samuel Adebayo
+
+    Date
+    ----
+    2025-05-13
+
+    Parameters
+    ----------
+    project1_dir : str
+        Path to the source project directory containing HDF5 subfolders.
+    project2_dir : str
+        Path to the target project directory where datasets will be merged.
+    missing_log : str, optional
+        TSV path for logging files present in project2 but missing in project1.
+        Defaults to 'missing_files.csv'.
+    metadata_log : str, optional
+        CSV path for saving the final summary of dataset names, shapes,
+        dtypes and file‐level metadata. Defaults to 'metadata_summary.csv'.
+
+    Behaviour
+    ---------
+    1. Finds all `.h5` files under `project2_dir` subfolders.
+    2. Logs any whose counterpart in `project1_dir` is absent.
+    3. Calls `mergeHdf5Datasets` for each pair, counting successes and skips.
+    4. After each merge (or skip), opens the destination file to gather:
+       - Number of datasets
+       - Dataset names, shapes and dtypes
+       - File‐level HDF5 attributes
+    5. Prints a summary table via `tabulate` and writes `metadata_log`.
+    """
+__author__ = "Samuel Adebayo"
+
+
 import os
 from tqdm import tqdm
 from utils import mergeHdf5Datasets
@@ -60,7 +99,6 @@ def mergeH5Dataset(project1_dir, project2_dir):
     print(f'\nNot exist count: {not_exist}')
     print(f'Successful merges: {merged} / {len(subtask_h5_files2)}\n')
 
-    # tabulate stats
     print(tabulate(
         stats,
         headers="keys",
@@ -69,7 +107,6 @@ def mergeH5Dataset(project1_dir, project2_dir):
         missingval="-"
     ))
 
-    # save metadata summary
     pd.DataFrame(stats).to_csv('metadata_summary.csv', index=False)
 
 
