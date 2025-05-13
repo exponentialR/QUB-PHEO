@@ -7,6 +7,8 @@ import argparse
 import os
 import h5py
 import numpy as np
+import csv
+import datetime
 
 def get_badSegment(folder_directory):
     """
@@ -193,24 +195,131 @@ class handLandMarkExtractor:
             h5f.create_dataset('timestamps', data=np.array(timestamps, dtype=np.float32))
         print(f"Extracted {len(timestamps)} frames of hand landmarks to '{output_h5}'.")
 
+
+def mergeHdf5Datasets(hdf5_1, hdf5_2,
+                      datasets_to_merge=None,
+                      rename_map=None,
+                      log_path='hdf5_merge_log.csv'):
+    """
+    Merge selected datasets from one HDF5 file into another, with optional renaming,
+    log any shape mismatches, and return a success flag.
+
+    Parameters
+    ----------
+    hdf5_1 : str
+        Path to the source HDF5 file (read-only).
+    hdf5_2 : str
+        Path to the destination HDF5 file (append mode).
+    datasets_to_merge : list of str, optional
+        List of dataset names (or full paths) in `hdf5_1` to copy.
+        Defaults to ['bounding_boxes', 'normalized_gaze'].
+    rename_map : dict, optional
+        Mapping from original dataset names to new names in `hdf5_2`.
+        E.g. {'bounding_boxes': 'bboxes', 'normalized_gaze': 'norm_gaze'}.
+    log_path : str, optional
+        CSV file path where shape‐mismatch events are appended.
+        Defaults to 'hdf5_merge_log.csv'.
+
+    Returns
+    -------
+    bool
+        True if *all* datasets in `datasets_to_merge` were found and merged
+        (with no shape mismatches); False if *any* were missing or mismatched.
+    """
+    # defaults
+    if datasets_to_merge is None:
+        datasets_to_merge = ['bounding_boxes', 'normalized_gaze']
+    if rename_map is None:
+        rename_map = {
+            'bounding_boxes': 'bboxes',
+            'normalized_gaze': 'norm_gaze'
+        }
+
+    # ensure log header exists once
+    header = ['timestamp', 'source_file', 'src_dataset', 'src_shape',
+              'dest_file', 'dest_dataset', 'dest_shape']
+    if not os.path.isfile(log_path):
+        with open(log_path, 'a', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(header)
+
+    all_success = True
+
+    with h5py.File(hdf5_1, 'r') as f1, h5py.File(hdf5_2, 'a') as f2:
+        for src_name in datasets_to_merge:
+            if src_name not in f1:
+                print(f"Warning: '{src_name}' not found in {hdf5_1}. Skipping.")
+                all_success = False
+                continue
+
+            dest_name = rename_map.get(src_name, src_name)
+
+            # if target exists, compare shapes
+            if dest_name in f2:
+                src_shape = f1[src_name].shape
+                dest_shape = f2[dest_name].shape
+
+                if src_shape != dest_shape:
+                    print(f"Shape mismatch for {src_name} → {dest_name}: "
+                          f"source {src_shape} vs destination {dest_shape}. Skipping.")
+                    # log mismatch
+                    with open(log_path, 'a', newline='') as csvfile:
+                        writer = csv.writer(csvfile)
+                        writer.writerow([
+                            datetime.datetime.now().isoformat(),
+                            hdf5_1, src_name, src_shape,
+                            hdf5_2, dest_name, dest_shape
+                        ])
+                    all_success = False
+                    continue
+                else:
+                    # safe to overwrite
+                    del f2[dest_name]
+
+            # perform the copy
+            f1.copy(src_name, f2, name=dest_name)
+
+    # if all_success:
+    #     print(f"✅ All datasets merged successfully into '{hdf5_2}'.")
+    # else:
+    #     print(f"❌ Some datasets were skipped. Check logs for details.")
+
+    return all_success
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Extract hand landmarks from a video.")
-    parser.add_argument("--input", type=str, default="media/p04-CAM_AV-STAIRWAY_MS-CS-13.140981640849496_16.403350468435704.mp4",
-                        help="Path to the input video file.")
-    parser.add_argument("--output", type=str, default="p04-CAM_AV-STAIRWAY_MS-CS-13.140981640849496_16.403350468435704.h5",
-                        help="Path to the output HDF5 file.")
-    parser.add_argument("--detection_confidence", type=float, default=0.5,
-                        help="Detection confidence threshold.")
-    parser.add_argument("--tracking_confidence", type=float, default=0.5,
-                        help="Tracking confidence threshold.")
-    args = parser.parse_args()
+    h5_1 = '/home/samuel/ml_projects/QUBPHEO/benchmark/test_run/p1/BHO/p01-CAM_AV-BIAH_RB-BHO-0.0007253558395636801_1.4222339664428545.h5'
+    h5_2 = '/home/samuel/ml_projects/QUBPHEO/benchmark/test_run/p2/BHO/p01-CAM_AV-BIAH_RB-BHO-0.0007253558395636801_1.4222339664428545.h5'
 
-
-    detector = handLandMarkExtractor(
-        detection_confidence=args.detection_confidence,
-        tracking_confidence=args.tracking_confidence
+    success = mergeHdf5Datasets(
+        h5_1,
+        h5_2,
+        datasets_to_merge=['bounding_boxes', 'normalized_gaze'],
+        rename_map={'bounding_boxes': 'bboxes', 'normalized_gaze': 'norm_gaze'}
     )
-    detector.extract(args.input, args.output)
+    if success:
+        print("Merge completed without issues.")
+    else:
+        print("Merge completed with issues. Check logs for details.")
+
+
+    # parser = argparse.ArgumentParser(description="Extract hand landmarks from a video.")
+    # parser.add_argument("--input", type=str, default="media/p04-CAM_AV-STAIRWAY_MS-CS-13.140981640849496_16.403350468435704.mp4",
+    #                     help="Path to the input video file.")
+    # parser.add_argument("--output", type=str, default="p04-CAM_AV-STAIRWAY_MS-CS-13.140981640849496_16.403350468435704.h5",
+    #                     help="Path to the output HDF5 file.")
+    # parser.add_argument("--detection_confidence", type=float, default=0.5,
+    #                     help="Detection confidence threshold.")
+    # parser.add_argument("--tracking_confidence", type=float, default=0.5,
+    #                     help="Tracking confidence threshold.")
+    # args = parser.parse_args()
+    #
+    #
+    # detector = handLandMarkExtractor(
+    #     detection_confidence=args.detection_confidence,
+    #     tracking_confidence=args.tracking_confidence
+    # )
+    # detector.extract(args.input, args.output)
 
 
 # if __name__ == '__main__':
