@@ -4,7 +4,7 @@ This script segments videos based on filenames in a specific directory.
 __author__ = "Samuel Adebayo"
 
 import os
-from utils import extractSegment
+from utils import extract_segment
 
 def main(existingSegment_directory, baseVid_directory, output_directory, view_name):
     os.makedirs(output_directory, exist_ok=True)
@@ -19,7 +19,7 @@ def main(existingSegment_directory, baseVid_directory, output_directory, view_na
         video_list.extend(subtask_videos)
         control_count += len(subtask_videos)
     print(f'Total videos to process: {control_count}')
-    extractSegment(baseVid_directory, video_list, output_directory, view_name)
+    extract_segment(baseVid_directory, video_list, output_directory, view_name)
 
 if __name__ == '__main__':
     existing_segment_directory = '/home/samuel/extended_storage/Datasets/QUB-PHEO/segmented'

@@ -9,8 +9,10 @@ import h5py
 import numpy as np
 import csv
 import datetime
+import cv2
+from ultralytics import YOLO
 
-def get_badSegment(folder_directory):
+def get_bad_segment(folder_directory):
     """
     This function gets the filenames of all the bad segments in the given directory,
     Then saves them into a text file called bad_segments.txt.
@@ -27,8 +29,23 @@ def get_badSegment(folder_directory):
     print(f"Bad segments saved to bad_segments.txt")
 
 
+def delete_dataset_hf5(hdf5_file, dataset_name):
+    """
+    Deletes a dataset from an HDF5 file if it exists.
+    :param hdf5_file: Path to the HDF5 file.
+    :param dataset_name: Name of the dataset to delete.
+    """
+    with h5py.File(hdf5_file, 'a') as f:
+        if dataset_name in f:
+            del f[dataset_name]
+            print(f"✅  Deleted dataset '{dataset_name}' from '{hdf5_file}'.")
+            return True
+        else:
+            print(f"❌ Dataset '{dataset_name}' not found in '{hdf5_file}'.")
+            return False
 
-def extractSegment(baseVideoDirectory, controlVidList, outputDirectory, view_name, retain_audio=False):
+
+def extract_segment(baseVideoDirectory, controlVidList, outputDirectory, view_name, retain_audio=False):
     """
     This function extracts the segments from the base video directory and saves them to the output directory.
     :param baseVideoDirectory:
@@ -103,6 +120,79 @@ def extractSegment(baseVideoDirectory, controlVidList, outputDirectory, view_nam
 
     print(f"\nTotal video segments treated: {video_counter}")# strip
 
+
+def extract_bbox_from_video(video_path, model, h5_path):
+    """
+    Extracts bounding boxes from a video using YOLOv8.
+    :param video_path: Path to the input video file.
+    :return: List of bounding boxes for each frame.
+    """
+    cap = cv2.VideoCapture(video_path)
+    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    """
+    TODO: Handle the paths for h5 correctly
+    """
+    total_rec = 0
+    total_hands = 0
+    with h5py.File(h5_path, 'a') as h5f:
+        h5_frame_count = h5f['timestamps'].shape[0] if 'timestamps' in h5f else 0
+        if frame_count != h5_frame_count:
+            print(f"Warning: Frame count mismatch for {video_path}. Expected {frame_count}, found {h5_frame_count}.")
+
+        if 'rec_bboxes' not in h5f.keys():
+            print(f"Creating Rectangle BBoxes dataset for {video_path}...")
+            rec_bboxes_dset = h5f.create_dataset('rec_bboxes', (frame_count, 30, 4), dtype=np.float32)
+        else:
+            rec_bboxes_dset = h5f['rec_bboxes']
+
+        if 'surrogate_hands' not in h5f.keys():
+            print(f"Creating Surrogate Hands dataset for {video_path}...")
+            surrogate_hands_dset = h5f.create_dataset('surrogate_hands', (frame_count, 2, 4), dtype=np.float32)
+        else:
+            surrogate_hands_dset = h5f['surrogate_hands']
+
+        for frame_idx in range(frame_count):
+            hand_count, rec_count = 0, 0
+            surrogate_hands_track = {}
+            success, frame = cap.read()
+            if not success:
+                print(f"Error reading frame {frame_idx} from {video_path}.")
+                break
+            results = model(frame, verbose=False)
+            rectangle_bboxes, surrogate_hands = np.zeros((30, 4), dtype=np.float32), np.zeros((2, 4), dtype=np.float32)
+
+            num_boxes = len(results[0].boxes)
+            if num_boxes > 36:
+                print(f"Warning: More than 30 boxes detected in frame {frame_idx}. Only the first 30 will be saved.")
+            for idx, box in enumerate(results[0].boxes[:36]):
+                timestamp = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0  # convert to seconds
+                x, y, w, h = box.xywhn[0].tolist()
+                class_idx = int(box.cls)
+
+                if class_idx == 10:
+                    if hand_count < 2:
+                        surrogate_hands[hand_count] = [x, y, w, h]
+                        hand_count += 1
+                    else:
+                        print(f'{video_path} has more than 2 surrogate hands in frame {frame_idx}.')
+                        surrogate_hands_track[f'{os.path.basename(video_path)}_{frame_idx}_{timestamp}'] = [x, y, w, h]
+                        continue
+                else:
+                    if rec_count < 30:
+                        rectangle_bboxes[rec_count] = [x, y, w, h]
+                        rec_count += 1
+                    else:
+                        continue
+            total_rec += rec_count
+            total_hands += hand_count
+
+
+            surrogate_hands_dset[frame_idx] = surrogate_hands
+            rec_bboxes_dset[frame_idx] = rectangle_bboxes
+    cap.release()
+    print(f"✅  Extracted bounding boxes from {video_path} to {h5_path}.")
+    return os.path.basename(video_path), total_rec, total_hands, surrogate_hands_track
 
 
 class _MuteStderr:
@@ -288,21 +378,35 @@ def mergeHdf5Datasets(hdf5_1, hdf5_2,
 
 
 if __name__ == "__main__":
-    h5_1 = '/home/samuel/ml_projects/QUBPHEO/benchmark/test_run/p1/BHO/p01-CAM_AV-BIAH_RB-BHO-0.0007253558395636801_1.4222339664428545.h5'
-    h5_2 = '/home/samuel/ml_projects/QUBPHEO/benchmark/test_run/p2/BHO/p01-CAM_AV-BIAH_RB-BHO-0.0007253558395636801_1.4222339664428545.h5'
+    """=======================TESTING UTILS OF EXTRACTING BBOXES ========================================"""
+    h5_path = 'sample_data/bbox_preprocess/p01-CAM_AV-BIAH_RB-BHO-0.0007253558395636801_1.4222339664428545.h5'
+    video_path = 'sample_data/bbox_preprocess/p01-CAM_AV-BIAH_RB-BHO-0.0007253558395636801_1.4222339664428545.mp4'
+    model_path = 'models/Lego_YOLO.pt'
+    yolo_model = YOLO(model_path)
+    extract_bbox_from_video(video_path, yolo_model, h5_path)
 
-    success = mergeHdf5Datasets(
-        h5_1,
-        h5_2,
-        datasets_to_merge=['bounding_boxes', 'normalized_gaze'],
-        rename_map={'bounding_boxes': 'bboxes', 'normalized_gaze': 'norm_gaze'}
-    )
-    if success:
-        print("Merge completed without issues.")
-    else:
-        print("Merge completed with issues. Check logs for details.")
+    """=======================TESTING UTILS OF DELETING DATASET IN HDF5 ========================================"""
+    # hd5_file = 'sample_data/delete_dataset/p01-CAM_AV-BIAH_RB-BHO-25.420644039568998_26.674916343042494.h5'
+    # dataset_name = 'bboxes'
+    # delete_dataset_hf5(hd5_file, dataset_name)
 
 
+    """=======================TESTING UTILS OF MERGING DATASET ========================================"""
+    # h5_1 = '/home/samuel/ml_projects/QUBPHEO/benchmark/test_run/p1/BHO/p01-CAM_AV-BIAH_RB-BHO-0.0007253558395636801_1.4222339664428545.h5'
+    # h5_2 = '/home/samuel/ml_projects/QUBPHEO/benchmark/test_run/p2/BHO/p01-CAM_AV-BIAH_RB-BHO-0.0007253558395636801_1.4222339664428545.h5'
+    #
+    # success = mergeHdf5Datasets(
+    #     h5_1,
+    #     h5_2,
+    #     datasets_to_merge=['bounding_boxes', 'normalized_gaze'],
+    #     rename_map={'bounding_boxes': 'bboxes', 'normalized_gaze': 'norm_gaze'}
+    # )
+    # if success:
+    #     print("Merge completed without issues.")
+    # else:
+    #     print("Merge completed with issues. Check logs for details.")
+
+    """=======================TESTING UTILS OF EXTRACTING HAND LANDMARKS ========================================"""
     # parser = argparse.ArgumentParser(description="Extract hand landmarks from a video.")
     # parser.add_argument("--input", type=str, default="media/p04-CAM_AV-STAIRWAY_MS-CS-13.140981640849496_16.403350468435704.mp4",
     #                     help="Path to the input video file.")
@@ -321,6 +425,7 @@ if __name__ == "__main__":
     # )
     # detector.extract(args.input, args.output)
 
+"""=======================TESTING UTILS OF GETTING BAD SEGMENTS ========================================"""
 
 # if __name__ == '__main__':
 #     folder_directory = '/home/samueladebayo/Documents/PhD/QUBPHEO/corrupted-segment'
