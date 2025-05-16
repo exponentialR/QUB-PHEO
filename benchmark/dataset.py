@@ -134,17 +134,20 @@ class QUBPHEOAerialDataset(Dataset):
         return sample
 
 if __name__ == '__main__':
-    dataset = QUBPHEOAerialDataset(
-        csv_path='subtasks_byTask_time.csv',
-        h5_dir='/home/samuel/ml_projects/QUBPHEO/benchmark/landmarks',
-        split='train',
-        obs_len=60,
-        pred_len=60,
-        stride=15,
-        include_gaze=True,
-        include_obj_bbox=True,
-        include_surrogate_bbox=True
-    )
+    for split in ['train', 'val', 'test']:
+
+        dataset = QUBPHEOAerialDataset(
+            csv_path='subtasks_byTask_time.csv',
+            h5_dir='/home/samuel/ml_projects/QUBPHEO/benchmark/landmarks',
+            split=split,
+            obs_len=60,
+            pred_len=60,
+            stride=15,
+            include_gaze=True,
+            include_obj_bbox=True,
+            include_surrogate_bbox=True
+        )
+        print(f'Split: {split}: {len(dataset)} samples')
     print(f'Number of samples: {len(dataset)}')
     # csv_path = 'subtasks_byTask_time.csv'
     # import pandas as pd
@@ -152,7 +155,17 @@ if __name__ == '__main__':
     # df = pd.read_csv(csv_path, sep='\t')
     # print(df.columns)
 
-    dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+    # dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
+    #
+    # for batch in dataloader:
+    #     print(batch)
 
-    for batch in dataloader:
-        print(batch)
+    import pandas as pd, re
+
+    df = pd.read_csv('subtasks_byTask_time.csv', sep='\t')
+    df['pid'] = df['filename'].str.extract(r'p(\d+)-').astype(int)
+
+    splits = {'train': range(1, 49), 'val': range(49, 60), 'test': range(60, 71)}
+    for split, ids in splits.items():
+        n_clips = df[df['pid'].isin(ids)].shape[0]
+        print(split, n_clips)
