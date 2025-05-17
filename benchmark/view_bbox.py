@@ -5,7 +5,7 @@ from ultralytics import YOLO
 
 # Train the model
 # results = model.train(data='config.yaml', epochs=100, imgsz=640)
-trained_model = 'models/Lego_YOLO.pt'
+trained_model = 'weights/Lego_YOLO.pt'
 
 
 

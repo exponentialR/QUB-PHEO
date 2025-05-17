@@ -54,7 +54,7 @@ class handLandMarkExtractor:
         - z: Orthographic normalized depth relative to wrist origin.
     """
     def __init__(self,
-                 model_path: str = 'models/hand_landmarker.task',
+                 model_path: str = 'weights/hand_landmarker.task',
                  num_hands: int = 4,
                  tracking_confidence: float = 0.5):
         base_options = python.BaseOptions(

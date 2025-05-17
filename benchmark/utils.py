@@ -381,7 +381,7 @@ if __name__ == "__main__":
     """=======================TESTING UTILS OF EXTRACTING BBOXES ========================================"""
     h5_path = 'sample_data/bbox_preprocess/p01-CAM_AV-BIAH_RB-BHO-0.0007253558395636801_1.4222339664428545.h5'
     video_path = 'sample_data/bbox_preprocess/p01-CAM_AV-BIAH_RB-BHO-0.0007253558395636801_1.4222339664428545.mp4'
-    model_path = 'models/Lego_YOLO.pt'
+    model_path = 'weights/Lego_YOLO.pt'
     yolo_model = YOLO(model_path)
     extract_bbox_from_video(video_path, yolo_model, h5_path)
 

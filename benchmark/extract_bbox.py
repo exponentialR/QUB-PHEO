@@ -18,7 +18,7 @@ def extract_bbox(video_directory:Path, h5_directory:Path, camera_view='CAM_AV', 
     """
     video_list = sorted([video for video in video_directory.rglob('*.mp4') if camera_view.lower() in str(video).lower()])
     # h5_list = sorted([h5 for h5 in h5_directory.rglob('*.h5') if camera_view.lower() in str(h5).lower()])
-    model_path = 'models/Lego_YOLO.pt'
+    model_path = 'weights/Lego_YOLO.pt'
     yolo_model = YOLO(model_path)
     summary_results = []
     for video_file in tqdm(video_list, desc=f'Extracting BBoxes from Videos', unit='video'):
