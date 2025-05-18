@@ -4,7 +4,7 @@ This script segments videos based on filenames in a specific directory.
 __author__ = "Samuel Adebayo"
 
 import os
-from utils import extract_segment
+from utils.videosegments_utils import extract_segment
 
 def main(existingSegment_directory, baseVid_directory, output_directory, view_name):
     os.makedirs(output_directory, exist_ok=True)
