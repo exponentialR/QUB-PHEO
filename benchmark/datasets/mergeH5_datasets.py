@@ -107,7 +107,7 @@ def mergeH5Dataset(project1_dir, project2_dir):
         missingval="-"
     ))
 
-    pd.DataFrame(stats).to_csv('metadata_summary.csv', index=False)
+    pd.DataFrame(stats).to_csv('../metadata_summary.csv', index=False)
 
 
 

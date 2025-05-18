@@ -1,14 +1,9 @@
 import re
-
-import cv2
-import mediapipe as mp
 import argparse
 import os
-import h5py
-import numpy as np
 from tqdm import tqdm
 import pandas as pd
-from utils import handLandMarkExtractor
+from utils.landmark_utils import handLandMarkExtractor
 
 # Suppress GLOG INFO and WARNING (0=INFO, 1=WARNING, 2=ERROR, 3=FATAL)
 os.environ['GLOG_minloglevel']   = '2'

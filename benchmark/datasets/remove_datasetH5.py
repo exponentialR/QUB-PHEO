@@ -1,4 +1,4 @@
-from utils import delete_dataset_hf5
+from utils.hdf5_utils import delete_dataset_hf5
 from pathlib import Path
 from tabulate import tabulate
 from tqdm import tqdm

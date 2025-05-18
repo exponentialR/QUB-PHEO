@@ -1,11 +1,9 @@
 import os
-import re
 import h5py
 import numpy as np
-import pandas as pd
 import torch
-from numpy.ma.core import concatenate
 from torch.utils.data import Dataset, DataLoader
+import pandas as pd
 
 class QUBPHEOAerialDataset(Dataset):
     """
@@ -134,10 +132,12 @@ class QUBPHEOAerialDataset(Dataset):
         return sample
 
 if __name__ == '__main__':
+    file_dir = os.path.dirname(__file__)
+    csv_path = os.path.join(file_dir, 'subtasks_byTask_time.csv')
     for split in ['train', 'val', 'test']:
 
         dataset = QUBPHEOAerialDataset(
-            csv_path='subtasks_byTask_time.csv',
+            csv_path=csv_path,
             h5_dir='/home/samuel/ml_projects/QUBPHEO/benchmark/landmarks',
             split=split,
             obs_len=60,
@@ -162,7 +162,7 @@ if __name__ == '__main__':
 
     import pandas as pd, re
 
-    df = pd.read_csv('subtasks_byTask_time.csv', sep='\t')
+    df = pd.read_csv(csv_path, sep='\t')
     df['pid'] = df['filename'].str.extract(r'p(\d+)-').astype(int)
 
     splits = {'train': range(1, 49), 'val': range(49, 60), 'test': range(60, 71)}
