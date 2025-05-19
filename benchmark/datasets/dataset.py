@@ -25,7 +25,6 @@ class QUBPHEOAerialDataset(Dataset):
             obs_len (int): Number of past frames (observation window).
             pred_len (int): Number of future frames to forecast.
             stride (int): Step size between windows.
-            scale (float): Divisor to normalise pixel coords
         """
         self.obs_len = obs_len
         self.pred_len = pred_len
@@ -85,7 +84,7 @@ class QUBPHEOAerialDataset(Dataset):
 
     def __getitem__(self, idx):
         fpath, start, subtask_idx = self.samples[idx]
-        print(f'Loading {fpath}')
+        # print(f'Loading {fpath}')
         with h5py.File(fpath, 'r') as f:
             left = f['left_landmarks'][()]
             right = f['right_landmarks'][()]
