@@ -31,14 +31,14 @@ def intent_f1(logits, labels):
     if p + r == 0: return 0.
     return 2 * tp / (p + r)
 
-def save_md_and_plot(metrics_history, arch, batch_size):
+def save_md_and_plot(metrics_history, arch, batch_size, total_params_M, module_df):
     """
     metrics_history: list of dicts, each with keys
         'epoch', 'tr_mpjpe', 'va_mpjpe', 'tr_ade', 'va_ade', etc.
     arch: model name (string) for filenames/headers
     """
     df = pd.DataFrame(metrics_history)
-    df['epoch'] = df['epoch'].astype(int)
+
 
     md_path = f"results_{arch}.md"
     is_new = not os.path.exists(md_path)
@@ -46,12 +46,20 @@ def save_md_and_plot(metrics_history, arch, batch_size):
     with open(md_path, mode) as f:
         if is_new:
             f.write(f"# {arch.upper()} Performance\n\n")
+            f.write(f"- **Total params:** {total_params_M:.2f} M\n\n")
+            f.write("## Model parameter breakdown\n\n")
+            f.write(module_df.to_markdown(index=False, floatfmt=(".0f", ".3f")))
+            f.write("\n\n")
+
         f.write(f"## Run at {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
         f.write(f"- **Train batch size:** {batch_size}\n")
         f.write("### Epoch-wise metrics\n\n")
-        f.write(df.to_markdown(index=False, floatfmt=".3f"))
+        # df['epoch'] = df['epoch'].astype(int)
+        f.write(df.to_markdown(index=False, floatfmt=[ ".0f" ] + [".3f"] * (df.shape[1]-1)))
+
+        # f.write(df.to_markdown(index=False, floatfmt=".3f"))
         f.write("\n\n")
-        img_name = f"{time.strftime('%Y%m%d_%H%M%S')}_{arch}_learning_curves.png"
+        img_name = f"plots/{time.strftime('%Y%m%d_%H%M%S')}_{arch}_learning_curves.png"
         f.write(f"## Learning curves\n\n")
         f.write(f"![Performance curves]({img_name})\n")
 

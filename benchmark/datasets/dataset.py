@@ -35,7 +35,6 @@ class QUBPHEOAerialDataset(Dataset):
 
         df = pd.read_csv(csv_path, sep='\t')
         df = df[df['camera'] == 'CAM_AV']
-        # df = df[df['filename'].str.contains(r'-CAM_AV-', regex=True)]
         n_subject = 70
 
         train_ids = set(range(1, 49))
@@ -51,6 +50,9 @@ class QUBPHEOAerialDataset(Dataset):
 
         self.subtasks = sorted(df['subtask'].unique())
         self.subtask2idx = {subtask: i for i, subtask in enumerate(self.subtasks)}
+        self.subtask2idx['all'] = len(self.subtasks)
+        n_classes = len(self.subtask2idx)
+        print(f'Number of classes: {n_classes}')
 
         self.samples = []
         for _, row in df.iterrows():

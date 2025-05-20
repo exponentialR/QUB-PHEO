@@ -1,9 +1,24 @@
 bilstm: &bilstm
   arch: bilstm
-  epochs: 20
-  batch_size: 32
-  lr: 0.001
+  epochs: 200
+  batch_size: 64
+  dropout: 0.2
+  lr: 0.0001
   wd: 0.0001
+  optim: adagrad
+  grad_clip: 0.2
+  loss:
+    pose: 2.0
+    intent: 10.0
+  scheduler:
+    name: cosine
+    warmup_epochs: 5
+    min_lr: 1e-5
+  early_stopping:
+    patience: 25
+    min_delta: 0.003
+    delta_f1: 0.005
+  class_weights: True
   seed: 42
   data:
     csv_path: /home/samuel/PycharmProjects/QUB-PHEO/benchmark/datasets/subtasks_byTask_time.csv
@@ -12,8 +27,10 @@ bilstm: &bilstm
     pred_len: 60
     stride:   15
     include_gaze: false
-    include_obj_bbox: false
-    include_surrogate_bbox: false
+    include_obj_bbox: true
+    include_surrogate_bbox: true
+    obj_box_dim: 120
+    sur_box_dim: 8
 
 bigru:      {<<: *bilstm, arch: bigru}
 tcn:        {<<: *bilstm, arch: tcn}
