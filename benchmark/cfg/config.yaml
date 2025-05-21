@@ -1,25 +1,23 @@
-bilstm: &bilstm
-  arch: bilstm
-  epochs: 200
+defaults: &defaults
+  epochs: 120
   batch_size: 64
   dropout: 0.2
-  lr: 0.0001
-  wd: 0.0001
-  optim: adagrad
-  grad_clip: 0.2
+  grad_clip: 1.0
+  optim: adamw
+  wd: 1e-5
   loss:
-    pose: 2.0
-    intent: 10.0
+    pose: 1.0
   scheduler:
     name: cosine
-    warmup_epochs: 5
-    min_lr: 1e-5
+    warmup_epochs: 10
+    min_lr: 1e-6
+
   early_stopping:
-    patience: 25
-    min_delta: 0.003
-    delta_f1: 0.005
-  class_weights: True
+    patience: 20
+    min_delta: 0.001
+
   seed: 42
+
   data:
     csv_path: /home/samuel/PycharmProjects/QUB-PHEO/benchmark/datasets/subtasks_byTask_time.csv
     h5_dir:   /home/samuel/ml_projects/QUBPHEO/benchmark/landmarks
@@ -27,12 +25,49 @@ bilstm: &bilstm
     pred_len: 60
     stride:   15
     include_gaze: false
-    include_obj_bbox: true
-    include_surrogate_bbox: true
+    include_obj_bbox: false
+    include_surrogate_bbox: false
     obj_box_dim: 120
     sur_box_dim: 8
 
-bigru:      {<<: *bilstm, arch: bigru}
-tcn:        {<<: *bilstm, arch: tcn}
-transformer: {<<: *bilstm, arch: transformer}
-stgcn:      {<<: *bilstm, arch: stgcn}
+
+# Bi-LSTM baseline
+bilstm: &bilstm
+  <<: *defaults
+  arch:    bilstm
+  lr:      !!float 1e-3
+  scheduler:
+    name:        cosine
+    warmup_epochs: 5
+    min_lr:      !!float 1e-5
+
+# Bi-GRU baseline
+bigru:
+  <<: *bilstm
+  arch:    bigru
+
+# TCN baseline
+tcn:
+  <<: *defaults
+  arch:    tcn
+  lr:      !!float 5e-4
+  dropout: 0.1
+
+# Transformer baseline
+transformer:
+  <<: *defaults
+  arch:         transformer
+  lr:            3e-4
+  batch_size:    32
+  dropout:       0.1
+  scheduler:
+    name:         linear
+    warmup_epochs: 10
+    min_lr:       !!float 1e-6
+
+# ST-GCN baseline
+stgcn:
+  <<: *defaults
+  arch:    stgcn
+  lr:      !!float 1e-3
+  wd:      !!float 1e-4

@@ -157,7 +157,7 @@ class TwoHeadNet(nn.Module):
         self.encoder = SharedEncoder(arch=arch, input_dim=input_dim, dropout=dropout, A=A)
         f = self.encoder.out_dim
         self.pose_head = nn.Sequential(nn.LayerNorm(f),
-                                       nn.Dropout(self.encoder.dropout),
+                                       nn.Dropout(dropout),
                                        nn.Linear(f, 84))
         self.intent_head = nn.Sequential(nn.LayerNorm(f),
                                         nn.Dropout(self.encoder.dropout),
@@ -165,7 +165,7 @@ class TwoHeadNet(nn.Module):
                                          nn.LeakyReLU(),
                                          nn.Linear(f//2, 36))
 
-    def forward(self, x, use_intent_head=True):
+    def forward(self, x, use_intent_head=False):
         y = self.encoder(x)
         pred_seq = self.pose_head(y)
         if use_intent_head:
@@ -173,6 +173,5 @@ class TwoHeadNet(nn.Module):
             logits = self.intent_head(pooled)
             return pred_seq, logits
         else:
-
             return pred_seq
 
