@@ -30,11 +30,6 @@ The network is used in Section 4 (Baseline Architectures) of the paper
 and trained with the loss in Eq. (5).  See train.py for usage.
 """
 
-
-
-import torch
-import torch.nn as nn
-
 __author__ = "Samuel Adebayo"
 
 import torch
@@ -55,9 +50,6 @@ class STGCNBlock(nn.Module):
         self.bn = nn.BatchNorm2d(out_channels)
 
     def forward(self, x):
-        # x: (B, C, T, V)
-        #  1) spatial graph convolution: multiply features by adjacency
-        #    (we permute so that nodes are last dim, multiply, then back):
         x = x.permute(0,2,3,1)              # (B, T, V, C)
         x = torch.matmul(self.A, x)        # graph mix: (B, T, V, C)
         x = x.permute(0,3,1,2)              # (B, C, T, V)
@@ -173,12 +165,14 @@ class TwoHeadNet(nn.Module):
                                          nn.LeakyReLU(),
                                          nn.Linear(f//2, 36))
 
-    def forward(self, x):
-        # x: (batch, 60 frames, 84 features)
-        # but in train.py we will pass a larger tensor
+    def forward(self, x, use_intent_head=True):
         y = self.encoder(x)
         pred_seq = self.pose_head(y)
-        pooled = y.mean(dim=1)
-        logits = self.intent_head(pooled)
-        return pred_seq, logits
+        if use_intent_head:
+            pooled = y.mean(dim=1)
+            logits = self.intent_head(pooled)
+            return pred_seq, logits
+        else:
+
+            return pred_seq
 
