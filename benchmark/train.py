@@ -5,6 +5,7 @@ from utils.metrics_utils import mpjpe_2d, ade_fde_2d, save_md_and_plot
 from models.helper_utils import build_hand_adjacency, summarize_model, print_model_summary, set_seed, compute_class_weights, get_loader
 import time
 import torch
+import os
 
 
 def run_epoch(nnet, loader, opt, cfg, mse, device, train=True):
@@ -14,15 +15,15 @@ def run_epoch(nnet, loader, opt, cfg, mse, device, train=True):
     tots = {'mpjpe': 0, 'ade': 0, 'fde': 0, 'n': 0}
 
     for batch in loader:
-        if cfg['arch'].lower() == 'stgcn':
-            x = batch['obs_h'].to(device)  # (B,60,84)
-        else:
-            parts = [batch['obs_h'].to(device)]  # (B,60,84)
-            if 'obs_gaze' in batch:       parts.append(batch['obs_gaze'].to(device))
-            if 'obs_obj_box' in batch:    parts.append(batch['obs_obj_box'].to(device))
-            if 'obs_sur_box' in batch:    parts.append(batch['obs_sur_box'].to(device))
+        # if cfg['arch'].lower() == 'stgcn':
+        #     x = batch['obs_h'].to(device)  # (B,60,84)
+        # else:
+        parts = [batch['obs_h'].to(device)]  # (B,60,84)
+        if 'obs_gaze' in batch:       parts.append(batch['obs_gaze'].to(device))
+        if 'obs_obj_box' in batch:    parts.append(batch['obs_obj_box'].to(device))
+        if 'obs_sur_box' in batch:    parts.append(batch['obs_sur_box'].to(device))
 
-            x = torch.cat(parts, dim=-1).to(device)  # (B,60,84+2+4+4) provided all given
+        x = torch.cat(parts, dim=-1).to(device)  # (B,60,84+2+4+4) provided all given
         y_true = batch['pred_h'].to(device)  # (B,60,84)
 
         if train: opt.zero_grad()
@@ -110,7 +111,9 @@ def main(cfg):
 
     best_val   = float("inf")
     best_epoch = 0
-
+    model_dir = f"weights/{cfg['arch']}"; os.makedirs(model_dir, exist_ok=True)
+    model_name = f"weights_{cfg['arch']}-gaze_{cfg['data']['include_gaze']}-obj_{cfg['data']['include_obj_bbox']}-sur_{cfg['data']['include_surrogate_bbox']}.pt"
+    model_path = os.path.join(model_dir, model_name)
     for epoch in range(1, cfg["epochs"]+1):
         tr = run_epoch(net, loader_tr, optimizer, cfg, mse, device, train=True)
         va = run_epoch(net, loader_va, optimizer, cfg, mse, device, train=False)
@@ -119,8 +122,8 @@ def main(cfg):
         improved_mpjpe = va['mpjpe'] + min_delta < best_val
         if improved_mpjpe:
             best_val, best_epoch = va["mpjpe"], epoch
-            print(f" → saving model (mpjpe={va['mpjpe']:.3f})")
-            torch.save(net.state_dict(), f"weights/weights_{cfg['arch']}.pt")
+            print(f" → saving model (mpjpe={va['mpjpe']:.3f}) || into {model_path}")
+            torch.save(net.state_dict(), model_path)
 
         elif epoch - best_epoch >= patience:
             print(f"Early stop at epoch {epoch} (no improve for {patience} epochs)")
@@ -143,20 +146,20 @@ def main(cfg):
             'tr_fde': tr['fde'],
             'va_fde': va['fde'],
         })
-
-    net.load_state_dict(torch.load(f"weights/weights_{cfg['arch']}.pt"))
+    print(f'Loading best model {best_epoch} from {model_path}')
+    net.load_state_dict(torch.load(model_path))
     loader_te = get_loader("test", 64, **cfg["data"])
     te = run_epoch(net, loader_te, optimizer, cfg, mse, device, False)
     row = f"{cfg['arch']},{te['mpjpe']:.3f},{te['ade']:.3f}, {te['fde']:.3f}"
     print("CSV→", row)
-    save_md_and_plot(metrics_history, cfg['arch'], cfg['batch_size'], total_params_M, module_df)
+    save_md_and_plot(metrics_history, total_params_M, module_df, test_results=te, cfg=cfg)
 
     end_time = time.time()
     elapsed_time = end_time - start_time
     hours, remainder = divmod(elapsed_time, 3600)
     minutes, seconds = divmod(remainder, 60)
     print(f"Training time: {int(hours)}:{int(minutes):02}:{int(seconds):02}")
-    torch.save(net.state_dict(), f"weights/weights_{cfg['arch']}.pt")
+    torch.save(net.state_dict(), model_path)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

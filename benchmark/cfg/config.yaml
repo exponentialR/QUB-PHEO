@@ -24,9 +24,9 @@ defaults: &defaults
     obs_len:  60
     pred_len: 60
     stride:   15
-    include_gaze: false
-    include_obj_bbox: false
-    include_surrogate_bbox: false
+    include_gaze: true
+    include_obj_bbox: true
+    include_surrogate_bbox: true
     obj_box_dim: 120
     sur_box_dim: 8
 

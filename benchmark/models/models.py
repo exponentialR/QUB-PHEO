@@ -60,7 +60,7 @@ class STGCNBlock(nn.Module):
 
 
 class STGCNEncoder(nn.Module):
-    def __init__(self, A, in_channels=2, hidden_channels=[64,128,256]):
+    def __init__(self, A, in_channels, hidden_channels=[64,128,256]):
         super().__init__()
         layers = []
         c_in = in_channels
@@ -102,6 +102,7 @@ class SharedEncoder(nn.Module):
 
         elif arch.lower() == 'stgcn':
             assert A is not None, "Must pass adjacency A for STGCN"
+            self.input_proj = nn.Linear(input_dim, 84)
             self.core = STGCNEncoder(A, in_channels=2, hidden_channels=[64, 128, 256])
             self.out_dim = self.core.out_dim
 
@@ -141,7 +142,8 @@ class SharedEncoder(nn.Module):
             x = self.core(x.transpose(1, 2)) # Conv1D expects (batch, channels, seq_len)
             feat = x.transpose(1, 2)
         elif self.arch  == 'stgcn':
-            feat = self.core(x)
+            x2 = self.input_proj(x) # (batch, seq_len, 84)
+            feat = self.core(x2)
         else:
             x = self.core(self.fc_in(x) + self.pos) # (batch, seq_len, d_model)
             feat = x
@@ -159,19 +161,9 @@ class TwoHeadNet(nn.Module):
         self.pose_head = nn.Sequential(nn.LayerNorm(f),
                                        nn.Dropout(dropout),
                                        nn.Linear(f, 84))
-        self.intent_head = nn.Sequential(nn.LayerNorm(f),
-                                        nn.Dropout(self.encoder.dropout),
-                                         nn.Linear(f, f//2),
-                                         nn.LeakyReLU(),
-                                         nn.Linear(f//2, 36))
 
     def forward(self, x, use_intent_head=False):
         y = self.encoder(x)
         pred_seq = self.pose_head(y)
-        if use_intent_head:
-            pooled = y.mean(dim=1)
-            logits = self.intent_head(pooled)
-            return pred_seq, logits
-        else:
-            return pred_seq
+        return pred_seq
 
