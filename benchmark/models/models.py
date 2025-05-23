@@ -143,6 +143,7 @@ class SharedEncoder(nn.Module):
             feat = x.transpose(1, 2)
         elif self.arch  == 'stgcn':
             x2 = self.input_proj(x) # (batch, seq_len, 84)
+            # print("x2 mean", x2.abs().mean().item())
             feat = self.core(x2)
         else:
             x = self.core(self.fc_in(x) + self.pos) # (batch, seq_len, d_model)

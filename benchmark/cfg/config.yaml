@@ -24,9 +24,9 @@ defaults: &defaults
     obs_len:  60
     pred_len: 60
     stride:   15
-    include_gaze: true
-    include_obj_bbox: true
-    include_surrogate_bbox: true
+    include_gaze: false
+    include_obj_bbox: false
+    include_surrogate_bbox: false
     obj_box_dim: 120
     sur_box_dim: 8
 
@@ -69,5 +69,5 @@ transformer:
 stgcn:
   <<: *defaults
   arch:    stgcn
-  lr:      !!float 1e-3
+  lr:      !!float 3e-4
   wd:      !!float 1e-4
