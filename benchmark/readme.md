@@ -4,8 +4,7 @@ This repository accompanies the **submitted** IFAC J3C 2025 paper
 **“Establishing Baselines for Dyadic Visual Motion Prediction Using the QUB-PHEO Dataset.”**  
 It provides code, configs, pre-trained weights and result logs for five temporal backbones on the QUB-PHEO collaborative-assembly dataset.
 
-> **Status** – Paper under review (IFAC Joint Conference on Cyber-Physical & Human-Systems 2025).  
-> Please cite the *submission* until the camera-ready version is available.
+> **Status** – [Paper published at IFAC Joint Conference on Cyber-Physical & Human-Systems 2025](https://www.sciencedirect.com/science/article/pii/S2405896325027405).  
 
 ---
 
