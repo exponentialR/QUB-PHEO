@@ -31,5 +31,8 @@ pages={157050-157066},
 doi={10.1109/ACCESS.2024.3485162}}
 ```
 
+## Papers that have so far used QUB-PHEO
+- Establishing Baselines for Dyadic Visual Motion Prediction Using the QUB-PHEO Dataset [Paper](https://www.sciencedirect.com/science/article/pii/S2405896325027405) | [Repo](https://github.com/exponentialR/QUB-PHEO/tree/master/benchmark)
+
 
 
